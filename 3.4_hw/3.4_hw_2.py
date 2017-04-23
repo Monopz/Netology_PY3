@@ -11,22 +11,22 @@ import re
 URL = 'http://fx.currencysystem.com/webservices/CurrencyServer4.asmx?WSDL'
 client = osa.client.Client(URL)
 
-def read_curr():
-    with    open('currencies.txt') as file_cost:
-        for line in file_cost.readlines():
-            departure, landing, cost, curr = (re.split('[ :-]+', line.strip()))
-            yield cost, curr
+file_path = 'currencies.txt'
 
-def convert_to_rub(cost, curr):
+def get_currency_cost(file_1):
+    with open(file_1) as file_cost:
+        for value in file_cost.readlines():
+            dep, ar, cost, currency = re.split('[ :-]+', value.strip())
+            yield cost, currency
+
+def currency_exchange(cost, currency):
     available_currencies = client.service.Currencies().split(';')
-    response = client.service.ConvertToNum(fromCurrency=curr,toCurrency='RUB', amount = cost, rounding=True)
+    cost_in_rubles = client.service.ConvertToNum(fromCurrency=currency, toCurrency='RUB', amount=cost, rounding=True)
+    return float(cost_in_rubles)
 
-    print('Стоимость билетов состоит {} рублей'.format(int(response)))
-    return
+flight_cost_in_rubles = sum(
+    currency_exchange(cost, currency)
+    for cost, currency in get_currency_cost(file_path)
+)
 
-convert_to_rub()
-
-price = sum(convert_to_rub(cost, curr)
-    for cost, curr in read_curr())
-
-print(price)
+print('Цена всех билетов: ', int(flight_cost_in_rubles), 'руб')
